@@ -1,70 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Queue System - Customer</title>
-<style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212;
-    color: #eee;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    padding: 20px;
-  }
-  h1 {
-    color: #4caf50;
-    margin-bottom: 40px;
-    font-weight: 700;
-  }
-  button {
-    background-color: #4caf50;
-    border: none;
-    padding: 20px 50px;
-    font-size: 24px;
-    color: white;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.6);
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background-color: #66bb6a;
-  }
-  #yourTicket {
-    font-size: 96px;
-    margin-top: 40px;
-    color: #81c784;
-    font-weight: 700;
-  }
-  p {
-    font-size: 22px;
-    margin-top: 30px;
-    color: #bbb;
-  }
-</style>
+  <title>Customer Queue Screen</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    #yourTicket {
+      font-size: 60px;
+      margin-top: 20px;
+      color: #03dac6;
+    }
+    button {
+      font-size: 20px;
+      padding: 10px 20px;
+      background-color: #03dac6;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #000;
+    }
+    button:hover {
+      background-color: #018786;
+    }
+  </style>
 </head>
 <body>
+  <h1>Welcome! Please take a ticket</h1>
+  <button id="takeTicket">Take Ticket</button>
+  <p>Your number:</p>
+  <div id="yourTicket">-</div>
 
-<h1>Ambil tiket order duluuu</h1>
+  <script type="module">
+    // Your Firebase configuration
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-<button id="takeTicketBtn">Tekan Sini</button>
-
-<p>Number Tiket Anda</p>
-<div id="yourTicket">-</div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-<script>
-  // Your Firebase configuration - replace these with your actual config from Firebase Console
-  const firebaseConfig = {
+    const firebaseConfig = {
     apiKey: "AIzaSyA1Zx2SXdPafNZjRJqiJZ-h4rop4W0y9Wc",
     authDomain: "queuetic.firebaseapp.com",
     databaseURL: "https://queuetic-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -72,60 +50,55 @@
     storageBucket: "queuetic.firebasestorage.app",
     messagingSenderId: "233560814565",
     appId: "1:233560814565:web:4f1251ea857a4c4a24350c"
-  };
+    };
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  const yourTicketDiv = document.getElementById('yourTicket');
-  const takeTicketBtn = document.getElementById('takeTicketBtn');
+    const takeTicketBtn = document.getElementById('takeTicket');
+    const yourTicketDiv = document.getElementById('yourTicket');
 
-  let yourTicketNumber = null;
-
-  // Function to get the last ticket number and increment
-  async function getNextTicketNumber() {
-    const snapshot = await db.ref('lastTicketNumber').get();
-    return snapshot.exists() ? snapshot.val() + 1 : 1;
-  }
-
-  takeTicketBtn.addEventListener('click', async () => {
+    let yourTicketNumber = localStorage.getItem('ticketNumber');
     if (yourTicketNumber !== null) {
-      alert("You already have a ticket: " + yourTicketNumber);
-      return;
+      yourTicketNumber = parseInt(yourTicketNumber);
+      yourTicketDiv.textContent = yourTicketNumber;
     }
-    const nextNumber = await getNextTicketNumber();
-    yourTicketNumber = nextNumber;
 
-    // Add ticket to queue
-    await db.ref('queue').push(yourTicketNumber);
+    async function getNextTicketNumber() {
+      const lastTicketRef = ref(db, 'lastTicketNumber');
+      let lastTicket = 0;
+      await onValue(lastTicketRef, (snapshot) => {
+        lastTicket = snapshot.val() || 0;
+      }, {
+        onlyOnce: true
+      });
+      return lastTicket + 1;
+    }
 
-    // Update lastTicketNumber
-    await db.ref('lastTicketNumber').set(yourTicketNumber);
+    takeTicketBtn.addEventListener('click', async () => {
+      if (yourTicketNumber !== null) {
+        alert("You already have a ticket: " + yourTicketNumber);
+        return;
+      }
 
-    yourTicketDiv.textContent = yourTicketNumber;
-  });
+      const nextNumber = await getNextTicketNumber();
+      yourTicketNumber = nextNumber;
 
-  yourTicketDiv.textContent = '-';
+      await push(ref(db, 'queue'), yourTicketNumber);
+      await set(ref(db, 'lastTicketNumber'), yourTicketNumber);
 
-  // Listen to changes in the currently served number
-db.ref('queue').on('value', async () => {
-  // Recheck the queue (optional)
-});
+      localStorage.setItem('ticketNumber', yourTicketNumber);
+      yourTicketDiv.textContent = yourTicketNumber;
+    });
 
-db.ref('queue').on('child_removed', async (snapshot) => {
-  // Get the most recently served number
-  const removedNumber = snapshot.val();
-
-  if (yourTicketNumber === removedNumber) {
-    alert("🎉 Your order is ready!");
-    document.getElementById('yourTicket').style.color = '#4caf50';
-    document.querySelector('p').textContent = "✅ Order dah siap, boleh datang ambil!";
-  }
-});
-
-  
-</script>
-
+    onChildRemoved(ref(db, 'queue'), (snapshot) => {
+      const removedNumber = snapshot.val();
+      if (parseInt(removedNumber) === yourTicketNumber) {
+        alert("🎉 Your order is ready!");
+        yourTicketDiv.style.color = '#4caf50';
+        localStorage.removeItem('ticketNumber');
+      }
+    });
+  </script>
 </body>
 </html>
