@@ -51,7 +51,9 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { 
+      getDatabase, ref, push, set, onChildRemoved, runTransaction 
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
      apiKey: "AIzaSyA1Zx2SXdPafNZjRJqiJZ-h4rop4W0y9Wc",
@@ -77,13 +79,18 @@
 
     async function getNextTicketNumber() {
       const lastTicketRef = ref(db, 'lastTicketNumber');
-      let lastTicket = 0;
-      await onValue(lastTicketRef, (snapshot) => {
-        lastTicket = snapshot.val() || 0;
-      }, {
-        onlyOnce: true
+      let nextTicket = 0;
+
+      await runTransaction(lastTicketRef, (current) => {
+        if (current === null) {
+          return 1;
+        }
+        return current + 1;
+      }).then((result) => {
+        nextTicket = result.snapshot.val();
       });
-      return lastTicket + 1;
+
+      return nextTicket;
     }
 
     takeTicketBtn.addEventListener('click', async () => {
@@ -96,7 +103,7 @@
       yourTicketNumber = nextNumber;
 
       await push(ref(db, 'queue'), yourTicketNumber);
-      await set(ref(db, 'lastTicketNumber'), yourTicketNumber);
+      // 'lastTicketNumber' is updated by runTransaction, no need to set here again.
 
       localStorage.setItem('ticketNumber', yourTicketNumber);
       yourTicketDiv.textContent = yourTicketNumber;
