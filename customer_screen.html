@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Queue System - Customer</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    color: #4caf50;
+    margin-bottom: 40px;
+    font-weight: 700;
+  }
+  button {
+    background-color: #4caf50;
+    border: none;
+    padding: 20px 50px;
+    font-size: 24px;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(76, 175, 80, 0.6);
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #66bb6a;
+  }
+  #yourTicket {
+    font-size: 96px;
+    margin-top: 40px;
+    color: #81c784;
+    font-weight: 700;
+  }
+  p {
+    font-size: 22px;
+    margin-top: 30px;
+    color: #bbb;
+  }
+</style>
+</head>
+<body>
+
+<h1>Take a Ticket</h1>
+
+<button id="takeTicketBtn">Take a Ticket</button>
+
+<p>Your Ticket Number:</p>
+<div id="yourTicket">-</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+  // Your Firebase configuration - replace these with your actual config from Firebase Console
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1Zx2SXdPafNZjRJqiJZ-h4rop4W0y9Wc",
+    authDomain: "queuetic.firebaseapp.com",
+    databaseURL: "https://queuetic-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "queuetic",
+    storageBucket: "queuetic.firebasestorage.app",
+    messagingSenderId: "233560814565",
+    appId: "1:233560814565:web:4f1251ea857a4c4a24350c"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const yourTicketDiv = document.getElementById('yourTicket');
+  const takeTicketBtn = document.getElementById('takeTicketBtn');
+
+  let yourTicketNumber = null;
+
+  // Function to get the last ticket number and increment
+  async function getNextTicketNumber() {
+    const snapshot = await db.ref('lastTicketNumber').get();
+    return snapshot.exists() ? snapshot.val() + 1 : 1;
+  }
+
+  takeTicketBtn.addEventListener('click', async () => {
+    if (yourTicketNumber !== null) {
+      alert("You already have a ticket: " + yourTicketNumber);
+      return;
+    }
+    const nextNumber = await getNextTicketNumber();
+    yourTicketNumber = nextNumber;
+
+    // Add ticket to queue
+    await db.ref('queue').push(yourTicketNumber);
+
+    // Update lastTicketNumber
+    await db.ref('lastTicketNumber').set(yourTicketNumber);
+
+    yourTicketDiv.textContent = yourTicketNumber;
+  });
+
+  yourTicketDiv.textContent = '-';
+</script>
+
+</body>
+</html>
