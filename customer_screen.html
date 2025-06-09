@@ -107,6 +107,24 @@
   });
 
   yourTicketDiv.textContent = '-';
+
+  // Listen to changes in the currently served number
+db.ref('queue').on('value', async () => {
+  // Recheck the queue (optional)
+});
+
+db.ref('queue').on('child_removed', async (snapshot) => {
+  // Get the most recently served number
+  const removedNumber = snapshot.val();
+
+  if (yourTicketNumber === removedNumber) {
+    alert("🎉 Your order is ready!");
+    document.getElementById('yourTicket').style.color = '#4caf50';
+    document.querySelector('p').textContent = "✅ Your order is ready!";
+  }
+});
+
+  
 </script>
 
 </body>
