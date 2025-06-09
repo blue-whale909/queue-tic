@@ -52,7 +52,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { 
-      getDatabase, ref, push, set, onChildRemoved, runTransaction 
+      getDatabase, ref, push, set, onValue, onChildRemoved, runTransaction, get 
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -71,8 +71,11 @@
     const takeTicketBtn = document.getElementById('takeTicket');
     const yourTicketDiv = document.getElementById('yourTicket');
 
+    let ticketId = localStorage.getItem('ticketId');
     let yourTicketNumber = localStorage.getItem('ticketNumber');
-    if (yourTicketNumber !== null) {
+
+    // Restore if valid
+    if (ticketId && yourTicketNumber) {
       yourTicketNumber = parseInt(yourTicketNumber);
       yourTicketDiv.textContent = yourTicketNumber;
     }
@@ -82,10 +85,7 @@
       let nextTicket = 0;
 
       await runTransaction(lastTicketRef, (current) => {
-        if (current === null) {
-          return 1;
-        }
-        return current + 1;
+        return (current || 0) + 1;
       }).then((result) => {
         nextTicket = result.snapshot.val();
       });
@@ -94,26 +94,45 @@
     }
 
     takeTicketBtn.addEventListener('click', async () => {
-      if (yourTicketNumber !== null) {
-        alert("You already have a ticket: " + yourTicketNumber);
-        return;
+      // Check if already has ticket and status is still active
+      if (ticketId && yourTicketNumber) {
+        const ticketRef = ref(db, 'queue/' + ticketId);
+        const snapshot = await get(ticketRef);
+
+        if (snapshot.exists()) {
+          const status = snapshot.val().status;
+          if (status === 'active') {
+            alert("You already have an active ticket: " + yourTicketNumber);
+            return;
+          }
+        }
       }
 
       const nextNumber = await getNextTicketNumber();
+      const newTicketRef = await push(ref(db, 'queue'));
+      await set(newTicketRef, {
+        number: nextNumber,
+        status: 'active'
+      });
+
+      ticketId = newTicketRef.key;
       yourTicketNumber = nextNumber;
 
-      await push(ref(db, 'queue'), yourTicketNumber);
-      // 'lastTicketNumber' is updated by runTransaction, no need to set here again.
-
+      localStorage.setItem('ticketId', ticketId);
       localStorage.setItem('ticketNumber', yourTicketNumber);
       yourTicketDiv.textContent = yourTicketNumber;
     });
 
-    onChildRemoved(ref(db, 'queue'), (snapshot) => {
-      const removedNumber = snapshot.val();
-      if (parseInt(removedNumber) === yourTicketNumber) {
+    // Listen for removal or updates
+    onValue(ref(db, 'queue'), (snapshot) => {
+      const data = snapshot.val();
+      if (!data || !ticketId || !data[ticketId]) return;
+
+      const ticket = data[ticketId];
+      if (ticket.status === 'served') {
         alert("🎉 Your order is ready!");
         yourTicketDiv.style.color = '#4caf50';
+        localStorage.removeItem('ticketId');
         localStorage.removeItem('ticketNumber');
       }
     });
