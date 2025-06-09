@@ -51,11 +51,11 @@
 </head>
 <body>
 
-<h1>Take a Ticket</h1>
+<h1>Ambil tiket order duluuu</h1>
 
-<button id="takeTicketBtn">Take a Ticket</button>
+<button id="takeTicketBtn">Tekan Sini</button>
 
-<p>Your Ticket Number:</p>
+<p>Number Tiket Anda</p>
 <div id="yourTicket">-</div>
 
 <!-- Firebase SDK -->
@@ -120,7 +120,7 @@ db.ref('queue').on('child_removed', async (snapshot) => {
   if (yourTicketNumber === removedNumber) {
     alert("🎉 Your order is ready!");
     document.getElementById('yourTicket').style.color = '#4caf50';
-    document.querySelector('p').textContent = "✅ Your order is ready!";
+    document.querySelector('p').textContent = "✅ Order dah siap, boleh datang ambil!";
   }
 });
 
