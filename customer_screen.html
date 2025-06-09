@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Customer Queue Screen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
   <style>
@@ -10,24 +11,32 @@
       color: #fff;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding: 50px;
+      padding: 40px 20px;
+      margin: 0;
     }
     #yourTicket {
-      font-size: 60px;
+      font-size: 48px;
       margin-top: 20px;
       color: #03dac6;
     }
     button {
-      font-size: 20px;
-      padding: 10px 20px;
+      font-size: 18px;
+      padding: 12px 24px;
       background-color: #03dac6;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       color: #000;
+      margin-top: 20px;
     }
     button:hover {
       background-color: #018786;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    p {
+      font-size: 16px;
     }
   </style>
 </head>
@@ -38,7 +47,6 @@
   <div id="yourTicket">-</div>
 
   <script type="module">
-    // Your Firebase configuration
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
